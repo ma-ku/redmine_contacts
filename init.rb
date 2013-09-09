@@ -1,14 +1,25 @@
 require 'redmine'
 
 # Patches to the Redmine core.
-require 'dispatcher'
+require 'dispatcher' unless Rails::VERSION::MAJOR >= 3
 
-Dispatcher.to_prepare :redmine_resources do
-  require_dependency 'issue'
-  # Guards against including the module multiple time (like in tests)
-  # and registering multiple callbacks
-  unless Issue.included_modules.include? RedmineResources::IssuePatch
-    Issue.send(:include, RedmineResources::IssuePatch)
+if Rails::VERSION::MAJOR >= 3
+  ActionDispatch::Callbacks.to_prepare do
+    require_dependency 'issue'
+    # Guards against including the module multiple time (like in tests)
+    # and registering multiple callbacks
+    unless Issue.included_modules.include? RedmineResources::IssuePatch
+      Issue.send(:include, RedmineResources::IssuePatch)
+    end
+  end
+else
+  Dispatcher.to_prepare :redmine_resources do
+    require_dependency 'issue'
+    # Guards against including the module multiple time (like in tests)
+    # and registering multiple callbacks
+    unless Issue.included_modules.include? RedmineResources::IssuePatch
+      Issue.send(:include, RedmineResources::IssuePatch)
+    end
   end
 end
 
@@ -22,7 +33,7 @@ end
 require_dependency 'redmine_resources/hooks'
 require_dependency 'redmine_resources/issue_new'
 
-Redmine::Plugin.register :redmine_resources do
+Redmine::Plugin.register :redmine_contacts do
   name 'Dependencias'
   author 'Julian Perelli'
   description 'Permite linkear dependencias a un issue. Basado en "Issue Resources" de Daniel Vandersluis'
